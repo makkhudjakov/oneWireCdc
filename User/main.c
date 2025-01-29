@@ -21,26 +21,7 @@
 #include "debug.h"
 #include "tusb_config.h"
 #include "tusb.h"
-
-// Invoked when device is mounted
-void tud_mount_cb(void) {
-}
-
-// Invoked when device is unmounted
-void tud_umount_cb(void) {
-}
-
-// Invoked when usb bus is suspended
-// remote_wakeup_en : if host allow us  to perform remote wakeup
-// Within 7ms, device must draw an average of current less than 2.5 mA from bus
-void tud_suspend_cb(bool remote_wakeup_en) {
-  (void) remote_wakeup_en;
-}
-
-// Invoked when usb bus is resumed
-void tud_resume_cb(void) {
-
-}
+#include "dshot.h"
 
 volatile uint32_t system_ticks = 0;
 
@@ -67,71 +48,37 @@ uint32_t tusb_time_millis_api(void) {
 //--------------------------------------------------------------------+
 // USB CDC
 //--------------------------------------------------------------------+
+
+uint8_t inputBuffer[64];
+uint8_t inputBufferPtr = 0;
+
+uint8_t outputBuffer[64];
+uint8_t outputBufferPtr = 0;
+
 void cdc_task(void) {
-  // connected() check for DTR bit
-  // Most but not all terminal client set this when making connection
-  // if ( tud_cdc_connected() )
-  {
     // connected and there are data available
     if (tud_cdc_available()) {
-      // read data
-      char buf[64];
-      uint32_t count = tud_cdc_read(buf, sizeof(buf));
-      (void) count;
-
-      // Echo back
-      // Note: Skip echo by commenting out write() and write_flush()
-      // for throughput test e.g
-      //    $ dd if=/dev/zero of=/dev/ttyACM0 count=10000
-      tud_cdc_write(buf, count);
-      tud_cdc_write_flush();
+        // read data
+        uint8_t buf[64];
+        uint32_t count = tud_cdc_read(buf, sizeof(buf));
+        if(count > 0)
+        {
+            memcpy(&inputBuffer[inputBufferPtr], buf, count);
+            inputBufferPtr += count;
+        }
     }
-  }
 }
 
-// Invoked when cdc when line state changed e.g connected/disconnected
-void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
-  (void) itf;
-  (void) rts;
-
-  // TODO set some indicator
-  if (dtr) {
-    // Terminal connected
-  } else {
-    // Terminal disconnected
-  }
-}
-
-// Invoked when CDC interface received data from host
-void tud_cdc_rx_cb(uint8_t itf) {
-  (void) itf;
-}
-
-
-// USBFS
-__attribute__((interrupt)) __attribute__((used))
-void USBHD_IRQHandler(void) {
-  #if CFG_TUD_WCH_USBIP_USBFS
-  tud_int_handler(0);
-  #endif
-}
-
-__attribute__((interrupt)) __attribute__((used))
-void USBHDWakeUp_IRQHandler(void) {
-  #if CFG_TUD_WCH_USBIP_USBFS
-  tud_int_handler(0);
-  #endif
-}
 
 // USBD (fsdev)
-__attribute__((interrupt)) __attribute__((used))
+__attribute__((used)) __attribute__((interrupt("WCH-Interrupt-fast")))
 void USB_LP_CAN1_RX0_IRQHandler(void) {
   #if CFG_TUD_WCH_USBIP_FSDEV
   tud_int_handler(0);
   #endif
 }
 
-__attribute__((interrupt)) __attribute__((used))
+__attribute__((used)) __attribute__((interrupt("WCH-Interrupt-fast")))
 void USB_HP_CAN1_TX_IRQHandler(void) {
   #if CFG_TUD_WCH_USBIP_FSDEV
   tud_int_handler(0);
@@ -139,11 +86,17 @@ void USB_HP_CAN1_TX_IRQHandler(void) {
 
 }
 
-__attribute__((interrupt)) __attribute__((used))
+__attribute__((used)) __attribute__((interrupt("WCH-Interrupt-fast")))
 void USBWakeUp_IRQHandler(void) {
   #if CFG_TUD_WCH_USBIP_FSDEV
   tud_int_handler(0);
   #endif
+}
+
+
+void inputCallback(uint16_t frame) {
+    memcpy(&outputBuffer[outputBufferPtr], &frame, sizeof(frame));
+    outputBufferPtr += sizeof(frame);
 }
 
 /*********************************************************************
@@ -158,7 +111,7 @@ int main(void)
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
     SystemCoreClockUpdate();
     SysTick_Config(SystemCoreClock / 1000);
-    Delay_Init();
+//    Delay_Init();
     USART_Printf_Init(115200);
     printf("SystemClk:%d\r\n", SystemCoreClock);
     printf( "ChipID:%08x\r\n", DBGMCU_GetCHIPID() );
@@ -184,8 +137,23 @@ int main(void)
 
     tusb_init(BOARD_TUD_RHPORT, &dev_init);
 
+    setIn();
+    setCallback(&inputCallback);
+
     while (1) {
         tud_task(); // tinyusb device task
         cdc_task();
+        if(inputBufferPtr >= 2) {
+            for(uint8_t i = 0; i < inputBufferPtr; i += 2) {
+                sendFrame(*(uint16_t*)&inputBuffer[i]);
+                inputBufferPtr -= sizeof(uint16_t);
+                tusb_time_delay_ms_api(10);
+            }
+        }
+        if(outputBufferPtr > 0) {
+            tud_cdc_write(outputBuffer, outputBufferPtr);
+            tud_cdc_write_flush();
+            outputBufferPtr = 0;
+        }
     }
 }
