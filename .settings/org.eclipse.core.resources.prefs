@@ -34,6 +34,7 @@ encoding//tinyusb/hw/bsp/ra/family.c=GBK
 encoding//tinyusb/src/CMakeLists.txt=GBK
 encoding//tinyusb/src/class/cdc/cdc.h=GBK
 encoding//tinyusb/src/class/cdc/cdc_device.h=GBK
+encoding//tinyusb/src/class/usbtmc/usbtmc.h=GBK
 encoding//tinyusb/src/common/tusb_compiler.h=GBK
 encoding//tinyusb/src/common/tusb_mcu.h=GBK
 encoding//tinyusb/src/common/tusb_types.h=GBK

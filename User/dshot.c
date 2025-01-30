@@ -183,11 +183,16 @@ void DMA1_Channel5_IRQHandler(void) {
     }
 }
 
+static uint16_t value = 0;
+#define TicksGates 20
+static uint16_t UpperTicksLimitT1H = Dshot300T1HTicks + (TicksGates / 2);
+static uint16_t LowerTicksLimitT1H = Dshot300T1HTicks - (TicksGates / 2);
+
 void DMA1_Channel7_IRQHandler(void) {
     if (DMA_GetITStatus(DMA1_IT_TC7) != RESET) {
-        uint16_t value = 0;
-        for(uint8_t i = 0; i < FRAME_LEN; i++) {
-            if(inBufDuty[FRAME_LEN - 1 - i] > (Dshot300T1HTicks - 5) && inBufDuty[FRAME_LEN - 1 - i] < (Dshot300T1HTicks + 5)) {
+        value = 0;
+        for(uint8_t i = 0, bufIndex = FRAME_LEN - 1; i < FRAME_LEN; i++, bufIndex--) {
+            if(inBufDuty[bufIndex] > LowerTicksLimitT1H && inBufDuty[bufIndex] < UpperTicksLimitT1H) {
                 value |=  1 << i;
             }
         }

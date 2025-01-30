@@ -147,7 +147,7 @@ int main(void)
             for(uint8_t i = 0; i < inputBufferPtr; i += 2) {
                 sendFrame(*(uint16_t*)&inputBuffer[i]);
                 inputBufferPtr -= sizeof(uint16_t);
-                tusb_time_delay_ms_api(10);
+                tusb_time_delay_ms_api(1);
             }
         }
         if(outputBufferPtr > 0) {
