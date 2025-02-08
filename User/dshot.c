@@ -183,7 +183,7 @@ void DMA1_Channel5_IRQHandler(void) {
     }
 }
 
-static uint16_t value = 0;
+static volatile uint16_t value = 0;
 #define TicksGates 20
 static uint16_t UpperTicksLimitT1H = Dshot300T1HTicks + (TicksGates / 2);
 static uint16_t LowerTicksLimitT1H = Dshot300T1HTicks - (TicksGates / 2);

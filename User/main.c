@@ -23,12 +23,12 @@
 #include "tusb.h"
 #include "dshot.h"
 
-volatile uint32_t system_ticks = 0;
+volatile uint32_t milliseconds = 0;
 
 __attribute__((interrupt))
 void SysTick_Handler(void) {
   SysTick->SR = 0;
-  system_ticks++;
+  milliseconds++;
 }
 
 uint32_t SysTick_Config(uint32_t ticks) {
@@ -42,7 +42,7 @@ uint32_t SysTick_Config(uint32_t ticks) {
 }
 
 uint32_t tusb_time_millis_api(void) {
-  return system_ticks;
+  return milliseconds;
 }
 
 //--------------------------------------------------------------------+
@@ -51,9 +51,6 @@ uint32_t tusb_time_millis_api(void) {
 
 uint8_t inputBuffer[64];
 uint8_t inputBufferPtr = 0;
-
-uint8_t outputBuffer[64];
-uint8_t outputBufferPtr = 0;
 
 void cdc_task(void) {
     // connected and there are data available
@@ -93,10 +90,10 @@ void USBWakeUp_IRQHandler(void) {
   #endif
 }
 
-
+static bool writeFlag = false;
 void inputCallback(uint16_t frame) {
-    memcpy(&outputBuffer[outputBufferPtr], &frame, sizeof(frame));
-    outputBufferPtr += sizeof(frame);
+    tud_cdc_write(&frame, sizeof(frame));
+    writeFlag = true;
 }
 
 /*********************************************************************
@@ -112,10 +109,10 @@ int main(void)
     SystemCoreClockUpdate();
     SysTick_Config(SystemCoreClock / 1000);
 //    Delay_Init();
-    USART_Printf_Init(115200);
-    printf("SystemClk:%d\r\n", SystemCoreClock);
-    printf( "ChipID:%08x\r\n", DBGMCU_GetCHIPID() );
-    printf("This is printf example\r\n");
+//    USART_Printf_Init(115200);
+//    printf("SystemClk:%d\r\n", SystemCoreClock);
+//    printf( "ChipID:%08x\r\n", DBGMCU_GetCHIPID() );
+//    printf("This is printf example\r\n");
 
     if(SystemCoreClock == 48000000) {
         RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_Div1);
@@ -143,17 +140,16 @@ int main(void)
     while (1) {
         tud_task(); // tinyusb device task
         cdc_task();
-        if(inputBufferPtr >= 2) {
+        if((inputBufferPtr % 2) == 0 && inputBuffer > 0) {
             for(uint8_t i = 0; i < inputBufferPtr; i += 2) {
                 sendFrame(*(uint16_t*)&inputBuffer[i]);
-                inputBufferPtr -= sizeof(uint16_t);
                 tusb_time_delay_ms_api(1);
             }
+            inputBufferPtr = 0;
         }
-        if(outputBufferPtr > 0) {
-            tud_cdc_write(outputBuffer, outputBufferPtr);
+        if(writeFlag) {
             tud_cdc_write_flush();
-            outputBufferPtr = 0;
+            writeFlag = false;
         }
     }
 }
