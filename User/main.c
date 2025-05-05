@@ -22,6 +22,7 @@
 #include "tusb_config.h"
 #include "tusb.h"
 #include "dshot.h"
+#include "multiplex.h"
 
 volatile uint32_t milliseconds = 0;
 
@@ -96,6 +97,11 @@ void inputCallback(uint16_t frame) {
     writeFlag = true;
 }
 
+typedef enum Commands_e {
+    Data = 0xAA,
+    SetChannel = 0x01
+} Commands_t;
+
 /*********************************************************************
  * @fn      main
  *
@@ -136,17 +142,31 @@ int main(void)
 
     setIn();
     setCallback(&inputCallback);
+    multiplexInit();
 
     while (1) {
         tud_task(); // tinyusb device task
         cdc_task();
-        if((inputBufferPtr % 2) == 0 && inputBuffer > 0) {
-            for(uint8_t i = 0; i < inputBufferPtr; i += 2) {
-                sendFrame(*(uint16_t*)&inputBuffer[i]);
-                tusb_time_delay_ms_api(1);
+        if((inputBufferPtr % 3) == 0 && inputBufferPtr > 0) {
+            uint8_t cmdNum = inputBufferPtr / 3;
+            for(uint8_t cmd = 0; cmd < cmdNum; cmd += 3) {
+                uint8_t cmdCode = inputBuffer[cmd];
+                uint16_t arg;
+                memcpy(&arg, &inputBuffer[cmd + 1], sizeof(arg));
+                switch (cmdCode) {
+                    case Data:
+                        sendFrame(arg);
+                        break;
+                    case SetChannel:
+                        multiplexSetChannel(arg);
+                        break;
+                    default:
+                        break;
+                }
             }
             inputBufferPtr = 0;
         }
+
         if(writeFlag) {
             tud_cdc_write_flush();
             writeFlag = false;

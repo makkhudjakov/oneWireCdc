@@ -25,7 +25,7 @@
 
 #include "tusb.h"
 
-#define USB_PID   0x4001
+#define USB_PID   0x4004
 #define USB_VID   0xCafe
 #define USB_BCD   0x0200
 
