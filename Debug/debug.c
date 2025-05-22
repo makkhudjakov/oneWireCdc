@@ -12,11 +12,36 @@
  *******************************************************************************/
 #include "debug.h"
 
-static uint8_t  p_us = 0;
-static uint16_t p_ms = 0;
-
 #define DEBUG_DATA0_ADDRESS  ((volatile uint32_t*)0xE0000380)
 #define DEBUG_DATA1_ADDRESS  ((volatile uint32_t*)0xE0000384)
+
+volatile uint32_t milliseconds = 0;
+
+__attribute__((interrupt("WCH-Interrupt-fast")))
+void SysTick_Handler(void) {
+  SysTick->SR = 0;
+  milliseconds++;
+}
+
+uint32_t SysTick_Config(void) {
+  NVIC_EnableIRQ(SysTicK_IRQn);
+  SysTick->CTLR = 0;
+  SysTick->SR = 0;
+  SysTick->CNT = 0;
+  SysTick->CMP = (SystemCoreClock / 1000) - 1;
+  SysTick->CTLR = 0xF;
+  return 0;
+}
+
+uint32_t millisecondsGet(void) {
+  return milliseconds;
+}
+
+uint16_t microsecondsGet(void) {
+    return (SysTick->CNT / (SystemCoreClock / 1000000));
+}
+
+
 
 /*********************************************************************
  * @fn      Delay_Init
@@ -27,8 +52,7 @@ static uint16_t p_ms = 0;
  */
 void Delay_Init(void)
 {
-    p_us = SystemCoreClock / 8000000;
-    p_ms = (uint16_t)p_us * 1000;
+    SysTick_Config();
 }
 
 /*********************************************************************
@@ -42,17 +66,34 @@ void Delay_Init(void)
  */
 void Delay_Us(uint32_t n)
 {
-    uint32_t i;
+    uint32_t tnow = 0;
+    uint32_t told = microsecondsGet();
+    uint32_t tcnt = 0;
+    uint32_t reload = microsecondsGet();
 
-    SysTick->SR &= ~(1 << 0);
-    i = (uint32_t)n * p_us;
+    while (1)
+    {
+        tnow = microsecondsGet();
+        int32_t diff = tnow - told;
+        if (diff < 0)
+        {
+            tcnt += (reload + diff);
+            told = tnow;
+        }
+        else if (diff > 0)
+        {
+            tcnt += diff;
+            told = tnow;
+        }
+        else
+        {
 
-    SysTick->CMP = i;
-    SysTick->CTLR |= (1 << 4);
-    SysTick->CTLR |= (1 << 5) | (1 << 0);
-
-    while((SysTick->SR & (1 << 0)) != (1 << 0));
-    SysTick->CTLR &= ~(1 << 0);
+        }
+        if (tcnt >= n)
+        {
+            break;
+        }
+    }
 }
 
 /*********************************************************************
@@ -66,17 +107,11 @@ void Delay_Us(uint32_t n)
  */
 void Delay_Ms(uint32_t n)
 {
-    uint32_t i;
+    uint32_t start = millisecondsGet();
 
-    SysTick->SR &= ~(1 << 0);
-    i = (uint32_t)n * p_ms;
-
-    SysTick->CMP = i;
-    SysTick->CTLR |= (1 << 4);
-    SysTick->CTLR |= (1 << 5) | (1 << 0);
-
-    while((SysTick->SR & (1 << 0)) != (1 << 0));
-    SysTick->CTLR &= ~(1 << 0);
+    while(start + n < millisecondsGet()) {
+        asm("nop");
+    }
 }
 
 /*********************************************************************

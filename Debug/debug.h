@@ -38,7 +38,7 @@ extern "C" {
 #define SDI_PRINT   SDI_PR_CLOSE
 #endif
 
-
+uint32_t millisecondsGet();
 void Delay_Init(void);
 void Delay_Us(uint32_t n);
 void Delay_Ms(uint32_t n);
