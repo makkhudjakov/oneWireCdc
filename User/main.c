@@ -23,35 +23,28 @@
 #include "tusb.h"
 #include "dshot.h"
 #include "multiplex.h"
-
-volatile uint32_t milliseconds = 0;
-
-__attribute__((interrupt))
-void SysTick_Handler(void) {
-  SysTick->SR = 0;
-  milliseconds++;
-}
-
-uint32_t SysTick_Config(uint32_t ticks) {
-  NVIC_EnableIRQ(SysTicK_IRQn);
-  SysTick->CTLR = 0;
-  SysTick->SR = 0;
-  SysTick->CNT = 0;
-  SysTick->CMP = ticks - 1;
-  SysTick->CTLR = 0xF;
-  return 0;
-}
+#include "motorControl.h"
 
 uint32_t tusb_time_millis_api(void) {
-  return milliseconds;
+  return millisecondsGet();
 }
 
 //--------------------------------------------------------------------+
 // USB CDC
 //--------------------------------------------------------------------+
+typedef enum Commands_e {
+    Data = 0xAA,
+    SetChannel = 0x01
+} Commands_t;
 
 uint8_t inputBuffer[64];
 uint8_t inputBufferPtr = 0;
+static bool writeFlag = false;
+
+void inputCallback(uint16_t frame) {
+    tud_cdc_write(&frame, sizeof(frame));
+    writeFlag = true;
+}
 
 void cdc_task(void) {
     // connected and there are data available
@@ -64,6 +57,31 @@ void cdc_task(void) {
             memcpy(&inputBuffer[inputBufferPtr], buf, count);
             inputBufferPtr += count;
         }
+    }
+
+    if((inputBufferPtr % 3) == 0 && inputBufferPtr > 0) {
+        uint8_t cmdNum = inputBufferPtr / 3;
+        for(uint8_t cmd = 0; cmd < cmdNum; cmd += 3) {
+            uint8_t cmdCode = inputBuffer[cmd];
+            uint16_t arg;
+            memcpy(&arg, &inputBuffer[cmd + 1], sizeof(arg));
+            switch (cmdCode) {
+                case Data:
+                    sendFrame(arg);
+                    break;
+                case SetChannel:
+                    multiplexSetChannel(arg);
+                    break;
+                default:
+                    break;
+            }
+        }
+        inputBufferPtr = 0;
+    }
+
+    if(writeFlag) {
+        tud_cdc_write_flush();
+        writeFlag = false;
     }
 }
 
@@ -91,16 +109,6 @@ void USBWakeUp_IRQHandler(void) {
   #endif
 }
 
-static bool writeFlag = false;
-void inputCallback(uint16_t frame) {
-    tud_cdc_write(&frame, sizeof(frame));
-    writeFlag = true;
-}
-
-typedef enum Commands_e {
-    Data = 0xAA,
-    SetChannel = 0x01
-} Commands_t;
 
 /*********************************************************************
  * @fn      main
@@ -113,8 +121,7 @@ int main(void)
 {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
     SystemCoreClockUpdate();
-    SysTick_Config(SystemCoreClock / 1000);
-//    Delay_Init();
+    Delay_Init();
 //    USART_Printf_Init(115200);
 //    printf("SystemClk:%d\r\n", SystemCoreClock);
 //    printf( "ChipID:%08x\r\n", DBGMCU_GetCHIPID() );
@@ -143,33 +150,11 @@ int main(void)
     setIn();
     setCallback(&inputCallback);
     multiplexInit();
+    motorControlInit();
 
     while (1) {
         tud_task(); // tinyusb device task
         cdc_task();
-        if((inputBufferPtr % 3) == 0 && inputBufferPtr > 0) {
-            uint8_t cmdNum = inputBufferPtr / 3;
-            for(uint8_t cmd = 0; cmd < cmdNum; cmd += 3) {
-                uint8_t cmdCode = inputBuffer[cmd];
-                uint16_t arg;
-                memcpy(&arg, &inputBuffer[cmd + 1], sizeof(arg));
-                switch (cmdCode) {
-                    case Data:
-                        sendFrame(arg);
-                        break;
-                    case SetChannel:
-                        multiplexSetChannel(arg);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            inputBufferPtr = 0;
-        }
-
-        if(writeFlag) {
-            tud_cdc_write_flush();
-            writeFlag = false;
-        }
+        motorControlTask();
     }
 }

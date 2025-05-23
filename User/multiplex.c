@@ -28,7 +28,7 @@ void multiplexInit(void) {
     GPIO_SetBits(GPIOB, GPIO_Pin_11);
 }
 
-void multiplexSetChannel(multiplexChannell_t channel) {
+void multiplexSetChannel(multiplexChannel_t channel) {
     switch (channel) {
         case MULTIPLEX_CHANNEL_1:
             GPIO_ResetBits(GPIOB, GPIO_Pin_0);
