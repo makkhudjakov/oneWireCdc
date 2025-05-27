@@ -1,6 +1,6 @@
 [submodule "tinyusb"]
 	path = tinyusb
 	url = https://github.com/hathach/tinyusb.git
-[submodule "ssd1306"]
-	path = ssd1306
-	url = https://github.com/libdriver/ssd1306.git
+[submodule "stm32-ssd1306"]
+	path = stm32-ssd1306
+	url = https://github.com/afiskon/stm32-ssd1306.git
