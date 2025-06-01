@@ -71,8 +71,8 @@ void I2C_Write(uint8_t addr, uint8_t reg, uint8_t* data, uint16_t len) {
 }
 
 void ssd1306_Reset(void) {
-
 }
+
 void ssd1306_WriteCommand(uint8_t byte) {
     I2C_Write(SSD1306_I2C_ADDR, 0x00, &byte, 1);
 }
@@ -130,7 +130,7 @@ const char* motorControlChannelToString(motorControlChannel_t channel) {
 
 void indicatorInit() {
     I2C_init();
-    ssd1306_Init();
+    ssd1306_Init(&Delay_Ms);
     ssd1306_Fill(Black);
     ssd1306_UpdateScreen();
 
