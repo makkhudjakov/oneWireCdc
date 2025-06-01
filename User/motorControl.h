@@ -11,7 +11,6 @@ typedef enum motorControlChannel_e {
     MOTOR_CONTROL_CHANNEL_2,
     MOTOR_CONTROL_CHANNEL_3,
     MOTOR_CONTROL_CHANNEL_4,
-    MOTOR_CONTROL_CHANNEL_ALL,
 } motorControlChannel_t;
 
 void motorControlInit();

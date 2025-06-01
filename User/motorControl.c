@@ -30,7 +30,7 @@ void switchType() {
 
 void switchChannel() {
     uint8_t new_channel = channel + 1;
-    if(new_channel > MOTOR_CONTROL_CHANNEL_ALL) {
+    if(new_channel > MOTOR_CONTROL_CHANNEL_4) {
         channel = MOTOR_CONTROL_CHANNEL_1;
     }
     else {
@@ -51,7 +51,7 @@ void clickCallback(encoderClickType_t clickType) {
 
 void motorControlInit() {
     type = MOTOR_CONTROL_DSHOT;
-    channel = MOTOR_CONTROL_CHANNEL_ALL;
+    channel = MOTOR_CONTROL_CHANNEL_1;
     throttle = 0;
     workPermition = false;
     indicatorUpdateType = true;

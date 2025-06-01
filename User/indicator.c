@@ -116,8 +116,7 @@ const char* motorControlChannelToString(motorControlChannel_t channel) {
         [MOTOR_CONTROL_CHANNEL_1] = "1",
         [MOTOR_CONTROL_CHANNEL_2] = "2",
         [MOTOR_CONTROL_CHANNEL_3] = "3",
-        [MOTOR_CONTROL_CHANNEL_4] = "4",
-        [MOTOR_CONTROL_CHANNEL_ALL] = "ALL",
+        [MOTOR_CONTROL_CHANNEL_4] = "4"
     };
     const char* unknownChannel = "Unknown";
     const size_t numElements = sizeof(channelStrings) / sizeof(channelStrings[0]);
