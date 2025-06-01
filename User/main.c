@@ -60,6 +60,7 @@ void cdc_task(void) {
     }
 
     if((inputBufferPtr % 3) == 0 && inputBufferPtr > 0) {
+        motorControlDisable();
         uint8_t cmdNum = inputBufferPtr / 3;
         for(uint8_t cmd = 0; cmd < cmdNum; cmd += 3) {
             uint8_t cmdCode = inputBuffer[cmd];

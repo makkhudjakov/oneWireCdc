@@ -1,22 +1,30 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include "debug.h"
 #include "encoder.h"
 #include "multiplex.h"
 #include "indicator.h"
 #include "motorControl.h"
 
-volatile motorControlType_t type;
-volatile motorControlChannel_t channel;
-volatile uint16_t throttle;
-bool workPermition;
-bool indicatorUpdateType;
-bool indicatorUpdateChannel;
-bool indicatorUpdateThrottle;
+
+static uint32_t permissionTimer;
+static const uint32_t permissionTimeout = 1000;
+static bool workPermition;
+
+static volatile motorControlType_t type;
+static volatile motorControlChannel_t channel;
+static volatile uint16_t throttle;
+
+static bool indicatorUpdateType;
+static bool indicatorUpdateChannel;
+static bool indicatorUpdateThrottle;
 
 void rotationCallback(int delta) {
-    int16_t new_throttle = (int)throttle + delta;
-    throttle = (new_throttle < 0) ? 0 : (new_throttle > 100) ? 100 : (uint16_t)new_throttle;
-    indicatorUpdateThrottle = true;
+    if(workPermition) {
+        int16_t new_throttle = (int)throttle + delta;
+        throttle = (new_throttle < 0) ? 0 : (new_throttle > 100) ? 100 : (uint16_t)new_throttle;
+        indicatorUpdateThrottle = true;
+    }
 }
 
 void switchType() {
@@ -39,13 +47,15 @@ void switchChannel() {
 }
 
 void clickCallback(encoderClickType_t clickType) {
-    if(clickType == ENCODER_LONG_CLICK) {
-        switchType();
-        indicatorUpdateType = true;
-    }
-    else {
-        switchChannel();
-        indicatorUpdateChannel = true;
+    if(workPermition) {
+        if(clickType == ENCODER_LONG_CLICK) {
+            switchType();
+            indicatorUpdateType = true;
+        }
+        else {
+            switchChannel();
+            indicatorUpdateChannel = true;
+        }
     }
 }
 
@@ -54,6 +64,7 @@ void motorControlInit() {
     channel = MOTOR_CONTROL_CHANNEL_1;
     throttle = 0;
     workPermition = false;
+    permissionTimer = millisecondsGet();
     indicatorUpdateType = true;
     indicatorUpdateChannel = true;
     indicatorUpdateThrottle = true;
@@ -65,15 +76,17 @@ void motorControlInit() {
     indicatorInit();
 }
 
-void motorControlEnable() {
-    workPermition = true;
-}
-
 void motorControlDisable() {
     workPermition = false;
+    permissionTimer = millisecondsGet();
 }
 
 void motorControlTask() {
+    uint32_t now = millisecondsGet();
+    if(now - permissionTimer > permissionTimeout) {
+        workPermition = true;
+    }
+
     if(indicatorUpdateType == true) {
         indicateType(type);
         indicatorUpdateType = false;
