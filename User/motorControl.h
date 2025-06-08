@@ -4,6 +4,7 @@
 #include "multiplex.h"
 
 typedef enum motorControlType_e {
+    MOTOR_CONTROL_DISABLE,
     MOTOR_CONTROL_DSHOT,
     MOTOR_CONTROL_PWM,
 } motorControlType_t;

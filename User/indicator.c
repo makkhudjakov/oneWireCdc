@@ -99,6 +99,7 @@ void deleteText(uint16_t x, uint16_t y, char* str) {
 
 const char* motorControlTypeToString(motorControlType_t type) {
     static const char* const typeStrings[] = {
+        [MOTOR_CONTROL_DISABLE] = "DISABLE",
         [MOTOR_CONTROL_DSHOT] = "DSHOT",
         [MOTOR_CONTROL_PWM]   = "PWM",
     };

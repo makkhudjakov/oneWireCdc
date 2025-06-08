@@ -26,7 +26,7 @@ void resetThrottle() {
 }
 
 void rotationCallback(int delta) {
-    if(workPermition) {
+    if(workPermition && type != MOTOR_CONTROL_DISABLE) {
         int16_t new_throttle = (int)throttle + delta;
         throttle = (new_throttle < 0) ? 0 : (new_throttle > 100) ? 100 : (uint16_t)new_throttle;
         indicatorUpdateThrottle = true;
@@ -37,8 +37,11 @@ void switchType() {
     if(type == MOTOR_CONTROL_DSHOT) {
         type = MOTOR_CONTROL_PWM;
     }
-    else {
+    else if (type == MOTOR_CONTROL_DISABLE) {
         type = MOTOR_CONTROL_DSHOT;
+    }
+    else {
+        type = MOTOR_CONTROL_DISABLE;
     }
 }
 
@@ -114,7 +117,7 @@ void TIM3_IRQHandler(void) {
 }
 
 void motorControlInit() {
-    type = MOTOR_CONTROL_DSHOT;
+    type = MOTOR_CONTROL_DISABLE;
     channel = MOTOR_CONTROL_CHANNEL_1;
     throttle = 0;
     workPermition = false;
@@ -140,7 +143,8 @@ void motorControlInit() {
 void motorControlDisable() {
     if(workPermition) {
         resetThrottle();
-        indicateThrottle(throttle);
+        type = MOTOR_CONTROL_DISABLE;
+        indicatorUpdateType = true;
         stopTimer();
         workPermition = false;
         dshotSetIn();
