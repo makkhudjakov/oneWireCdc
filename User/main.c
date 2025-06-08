@@ -68,7 +68,7 @@ void cdc_task(void) {
             memcpy(&arg, &inputBuffer[cmd + 1], sizeof(arg));
             switch (cmdCode) {
                 case Data:
-                    sendFrame(arg);
+                    dshotSendFrame(arg);
                     break;
                 case SetChannel:
                     multiplexSetChannel(arg);
@@ -148,8 +148,8 @@ int main(void)
 
     tusb_init(BOARD_TUD_RHPORT, &dev_init);
 
-    setIn();
-    setCallback(&inputCallback);
+    dshotSetIn();
+    dshotSetCallback(&inputCallback);
     multiplexInit();
     motorControlInit();
 

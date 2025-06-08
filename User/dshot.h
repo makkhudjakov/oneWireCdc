@@ -1,10 +1,11 @@
 #ifndef DSHOT_H_
 #define DSHOT_H_
 
-typedef void (*inputFrameCallback)(uint16_t);
+typedef void (*dshotInputFrameCallback)(uint16_t);
 
-void sendFrame(uint16_t frame);
-void setIn(void);
-void setCallback(inputFrameCallback callback);
+void dshotSendFrame(uint16_t frame);
+uint16_t dshotCreateFrame(uint8_t throttle);
+void dshotSetIn(void);
+void dshotSetCallback(dshotInputFrameCallback callback);
 
 #endif

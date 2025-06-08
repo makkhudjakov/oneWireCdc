@@ -13,7 +13,7 @@ static uint16_t buf[FRAME_LEN + 1];
 
 static uint16_t inBufDuty[FRAME_LEN];
 
-static inputFrameCallback inputCallback;
+static dshotInputFrameCallback inputCallback;
 static bool outputEnabled = false;
 
 static void TIM2_PWMOut_Init(u16 arr, u16 psc, u16 ccp);
@@ -178,7 +178,7 @@ void DMA1_Channel5_IRQHandler(void) {
     if (DMA_GetITStatus(DMA1_IT_TC5) != RESET) {
         GPIO_InConfig();
         disableOut();
-        setIn();
+        dshotSetIn();
         DMA_ClearITPendingBit(DMA1_IT_TC5);
     }
 }
@@ -230,17 +230,17 @@ static void disableIn(void) {
     TIM_DeInit(TIM2);
 }
 
-void setIn(void) {
+void dshotSetIn(void) {
     TIM2_PWMIn_Init(Dshot300PeriodTicks * 2, 1, 0);
     TIM2_DMAIn_Init((uint32_t)(&TIM2->CH2CVR), (uint32_t)inBufDuty, FRAME_LEN);
     enableIn();
 }
 
-void setCallback(inputFrameCallback callback) {
+void dshotSetCallback(dshotInputFrameCallback callback) {
     inputCallback = callback;
 }
 
-void sendFrame(uint16_t frame) {
+void dshotSendFrame(uint16_t frame) {
     while(outputEnabled) {
         asm("nop");
     }
@@ -255,4 +255,26 @@ void sendFrame(uint16_t frame) {
     setOut();
     GPIO_OutConfig();
     enableOut();
+}
+
+
+uint16_t dshotCreateFrame(uint8_t throttle) {
+    uint16_t frame = 0;
+    uint16_t payload = 0;
+    if(throttle == 0) {
+        payload = 0;
+    }
+    else if(throttle > 0 && throttle <= 100) {
+        payload = 48 + ((2047 - 48) * throttle) / 100;
+    }
+    else {
+        payload = 2047;
+    }
+    payload = payload << 1 | 0;
+
+    uint16_t crc = (payload ^ (payload >> 4) ^ (payload >> 8)) & 0x0F;
+
+    frame = payload << 4 | crc;
+
+    return frame;
 }
