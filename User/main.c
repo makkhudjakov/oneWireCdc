@@ -81,8 +81,9 @@ void cdc_task(void) {
     }
 
     if(writeFlag) {
-        tud_cdc_write_flush();
-        writeFlag = false;
+        if(tud_cdc_write_flush() > 0) {
+            writeFlag = false;
+        }
     }
 }
 
