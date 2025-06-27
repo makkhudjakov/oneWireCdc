@@ -148,7 +148,7 @@ void motorControlDisable() {
         stopTimer();
         workPermition = false;
         dshotSetIn();
-        Delay_Ms(150);
+        Delay_Ms(500);
     }
     permissionTimer = millisecondsGet();
 }
