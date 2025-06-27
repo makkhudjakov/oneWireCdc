@@ -10,7 +10,7 @@
 
 static uint32_t permissionTimer;
 static const uint32_t permissionTimeout = 1000;
-static bool workPermition;
+static volatile bool workPermition;
 
 static volatile motorControlType_t type;
 static volatile motorControlChannel_t channel;
