@@ -81,7 +81,6 @@ void configTimer() {
     TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
     TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
 
-    TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
 
     NVIC_InitTypeDef NVIC_InitStruct = {0};
     NVIC_InitStruct.NVIC_IRQChannel = TIM3_IRQn;
@@ -92,10 +91,12 @@ void configTimer() {
 }
 
 void startTimer() {
+    TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
     TIM_Cmd(TIM3, ENABLE);
 }
 
 void stopTimer() {
+    TIM_ITConfig(TIM3, TIM_IT_Update, DISABLE);
     TIM_Cmd(TIM3, DISABLE);
 }
 
