@@ -6,6 +6,7 @@ typedef enum multiplexChannel_e {
     MULTIPLEX_CHANNEL_2,
     MULTIPLEX_CHANNEL_3,
     MULTIPLEX_CHANNEL_4,
+    MULTIPLEX_CHANNEL_NONE,
 } multiplexChannel_t;
 
 void multiplexInit(void);

@@ -54,6 +54,12 @@ void multiplexSetChannel(multiplexChannel_t channel) {
             GPIO_SetBits(GPIOB, GPIO_Pin_10);
             GPIO_ResetBits(GPIOB, GPIO_Pin_11);
             break;
+        case MULTIPLEX_CHANNEL_NONE:
+            GPIO_SetBits(GPIOB, GPIO_Pin_0);
+            GPIO_SetBits(GPIOB, GPIO_Pin_1);
+            GPIO_SetBits(GPIOB, GPIO_Pin_10);
+            GPIO_SetBits(GPIOB, GPIO_Pin_11);
+            break;
         default:
             break;
     }

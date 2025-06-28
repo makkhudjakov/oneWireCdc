@@ -141,15 +141,17 @@ void motorControlInit() {
     configTimer();
 }
 
+__attribute__((optimize("O0")))
 void motorControlDisable() {
     if(workPermition) {
+        multiplexSetChannel(MULTIPLEX_CHANNEL_NONE);
         resetThrottle();
         type = MOTOR_CONTROL_DISABLE;
         indicatorUpdateType = true;
         stopTimer();
         workPermition = false;
         dshotSetIn();
-        Delay_Ms(500);
+        Delay_Ms(150);
     }
     permissionTimer = millisecondsGet();
 }

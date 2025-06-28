@@ -105,6 +105,7 @@ void Delay_Us(uint32_t n)
  *
  * @return  None
  */
+__attribute__((optimize("O0")))
 void Delay_Ms(uint32_t n)
 {
     uint32_t start = millisecondsGet();
